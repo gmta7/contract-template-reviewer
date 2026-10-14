@@ -183,7 +183,7 @@ drop.ondragleave = () => drop.classList.remove('over');
 drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over'); if(e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]); };
 
 function setFile(f){
-  const ok = /\.(docx|doc|pdf)$/i.test(f.name);
+  const ok = /\\.(docx|doc|pdf)$/i.test(f.name);
   if(!ok){ alert('仅支持 .docx / .doc / .pdf'); return; }
   file = f;
   const fn = document.getElementById('fn');
