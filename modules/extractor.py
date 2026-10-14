@@ -3,11 +3,29 @@
 支持 .docx / .doc / .pdf 三种格式
 """
 import os
+import re
 import shutil
 import subprocess
 import tempfile
 from pathlib import Path
 from typing import List, Optional, Tuple
+
+
+_STANDALONE_COLON_RE = re.compile(r"^[：:]+$")
+
+
+def _append_logical_paragraphs(paragraphs: List[str], text: str) -> None:
+    """
+    将一个 Word 段落统一拆成逻辑行。
+
+    Enter 会生成独立段落，Shift+Enter 会在同一段落中生成换行；
+    在进入差异比对前统一成相同的列表结构，避免后续内容错位。
+    同时忽略误输入的独立冒号段落，但保留“甲方：”等正常字段。
+    """
+    for line in text.splitlines():
+        line = line.strip()
+        if line and not _STANDALONE_COLON_RE.fullmatch(line):
+            paragraphs.append(line)
 
 
 def _iter_block_items(parent):
@@ -54,9 +72,7 @@ def extract_from_docx(file_path: str) -> List[str]:
     def _walk(parent):
         for block in _iter_block_items(parent):
             if isinstance(block, Paragraph):
-                text = block.text.strip()
-                if text:
-                    paragraphs.append(text)
+                _append_logical_paragraphs(paragraphs, block.text)
             elif isinstance(block, Table):
                 for row in block.rows:
                     for cell in row.cells:
