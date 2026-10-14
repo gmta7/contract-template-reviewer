@@ -28,7 +28,7 @@
 ## 1. 获取代码
 
 ```powershell
-git clone <本公开仓库的 GitHub 地址>
+git clone https://github.com/gmta7/contract-template-reviewer.git
 cd contract-template-reviewer
 ```
 
