@@ -415,6 +415,7 @@ def run_review(
                 template_text="\n".join(tmpl_paras),
                 contract_text=contract_full_text,
                 api_key=effective_key,
+                review_mode="template",
             )
     else:
         logger.info("未匹配到模版，走 LLM 全文初审")
@@ -424,6 +425,7 @@ def run_review(
                 template_text="",
                 contract_text=contract_full_text,
                 api_key=effective_key,
+                review_mode="non_template",
             )
 
     # 邮箱核查与是否匹配模版无关：模版/非模版合同都要查跨主体串用
@@ -617,11 +619,26 @@ def format_comment(
         risk_points = llm_result.get("risk_points", [])
         if risk_points:
             lines.append(f"  风险条款（共 {len(risk_points)} 条）：")
-            for rp in risk_points:
+            for idx, rp in enumerate(risk_points, 1):
+                if not isinstance(rp, dict):
+                    continue
                 level_icon = {"high": "🔴", "medium": "🟡", "low": "🟢"}.get(
                     rp.get("risk_level", ""), "•"
                 )
-                lines.append(f"    {level_icon} {rp.get('reason','')[:150]}")
+                title = rp.get("title") or f"风险事项 {idx}"
+                lines.append(f"    {level_icon} {idx}. {title}")
+                location = rp.get("location", "")
+                if location:
+                    lines.append(f"       位置：{location[:100]}")
+                excerpt = rp.get("clause_excerpt", "")
+                if excerpt:
+                    lines.append(f"       原文：{excerpt[:180]}")
+                reason = rp.get("reason", "")
+                if reason:
+                    lines.append(f"       原因：{reason[:200]}")
+                advice = rp.get("recommendation", "")
+                if advice:
+                    lines.append(f"       建议：{advice[:200]}")
         rec = llm_result.get("recommendation", "")
         if rec:
             lines.append(f"  建议：{rec}")

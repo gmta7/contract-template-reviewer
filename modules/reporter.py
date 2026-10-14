@@ -259,6 +259,55 @@ def _build_llm_html(llm_result: Optional[dict]) -> str:
             )
         parts.append("</table>")
 
+    risk_points = llm_result.get("risk_points", [])
+    if risk_points:
+        parts.append('<h4 style="margin:16px 0 8px">非模版合同风险明细</h4>')
+        for idx, point in enumerate(risk_points, 1):
+            if not isinstance(point, dict):
+                continue
+            sev = point.get("risk_level", "")
+            sev_cls = f"severity-{sev}" if sev in ("high", "medium", "low") else ""
+            sev_label = {"high": "高风险", "medium": "中等风险", "low": "低风险"}.get(sev, sev)
+            parts.append(
+                f'<h4 class="{sev_cls}">{idx}. {_escape(point.get("title", "风险事项"))}'
+                f'（{_escape(sev_label)}）</h4>'
+                '<table>'
+                f'<tr><th>类别</th><td>{_escape(point.get("category", ""))}</td>'
+                f'<th>问题类型</th><td>{_escape(point.get("issue_type", ""))}</td></tr>'
+                f'<tr><th>位置</th><td colspan="3">{_escape(point.get("location", ""))}</td></tr>'
+                f'<tr><th>合同原文</th><td colspan="3">{_escape(point.get("clause_excerpt", ""))}</td></tr>'
+                f'<tr><th>风险原因</th><td colspan="3">{_escape(point.get("reason", ""))}</td></tr>'
+                f'<tr><th>可能后果</th><td colspan="3">{_escape(point.get("potential_consequence", ""))}</td></tr>'
+                f'<tr><th>处理建议</th><td colspan="3">{_escape(point.get("recommendation", ""))}</td></tr>'
+                f'<tr><th>建议条款</th><td colspan="3">{_escape(point.get("suggested_revision", ""))}</td></tr>'
+                '</table>'
+            )
+
+    conflicts = llm_result.get("internal_conflicts", [])
+    if conflicts:
+        parts.append('<h4 style="margin:16px 0 8px">前后冲突</h4><ul>')
+        for conflict in conflicts:
+            if not isinstance(conflict, dict):
+                continue
+            locations = "、".join(str(item) for item in conflict.get("locations", []))
+            parts.append(
+                f'<li>{_escape(locations)}：{_escape(conflict.get("description", ""))}'
+                f'；建议：{_escape(conflict.get("recommendation", ""))}</li>'
+            )
+        parts.append("</ul>")
+
+    confirmations = llm_result.get("items_to_confirm", [])
+    if confirmations:
+        parts.append('<h4 style="margin:16px 0 8px">需人工确认事项</h4><ul>')
+        for item in confirmations:
+            if not isinstance(item, dict):
+                continue
+            parts.append(
+                f'<li>{_escape(item.get("item", ""))}'
+                f'（{_escape(item.get("reason", ""))}）</li>'
+            )
+        parts.append("</ul>")
+
     parts.append("</div>")
     return "".join(parts)
 
@@ -476,5 +525,72 @@ def generate_word_report(
                 tbl3.cell(k, 0).text = f.get("field_name", "")
                 tbl3.cell(k, 1).text = f.get("value", "")
                 tbl3.cell(k, 2).text = f.get("location", "")
+
+        risk_points = llm_result.get("risk_points", [])
+        if risk_points:
+            doc.add_paragraph()
+            _add_heading("非模版合同风险明细", level=3)
+            for idx, point in enumerate(risk_points, 1):
+                if not isinstance(point, dict):
+                    continue
+                severity = point.get("risk_level", "")
+                severity_label = {
+                    "high": "高风险",
+                    "medium": "中等风险",
+                    "low": "低风险",
+                }.get(severity, severity or "未分级")
+                heading = doc.add_paragraph()
+                title_run = heading.add_run(
+                    f"{idx}. {point.get('title') or '风险事项'}（{severity_label}）"
+                )
+                title_run.bold = True
+                if severity == "high":
+                    title_run.font.color.rgb = RGBColor(220, 38, 38)
+                elif severity == "medium":
+                    title_run.font.color.rgb = RGBColor(217, 119, 6)
+                else:
+                    title_run.font.color.rgb = RGBColor(37, 99, 235)
+
+                details = [
+                    ("风险类别", point.get("category", "")),
+                    ("问题类型", point.get("issue_type", "")),
+                    ("所在位置", point.get("location", "")),
+                    ("合同原文", point.get("clause_excerpt", "")),
+                    ("风险原因", point.get("reason", "")),
+                    ("可能后果", point.get("potential_consequence", "")),
+                    ("处理建议", point.get("recommendation", "")),
+                    ("建议修改文本", point.get("suggested_revision", "")),
+                ]
+                risk_table = doc.add_table(rows=len(details), cols=2)
+                risk_table.style = "Table Grid"
+                for row_idx, (label, value) in enumerate(details):
+                    risk_table.cell(row_idx, 0).text = label
+                    risk_table.cell(row_idx, 1).text = str(value or "")
+                for row in risk_table.rows:
+                    for run in row.cells[0].paragraphs[0].runs:
+                        run.bold = True
+                doc.add_paragraph()
+
+        conflicts = llm_result.get("internal_conflicts", [])
+        if conflicts:
+            _add_heading("前后冲突", level=3)
+            for conflict in conflicts:
+                if not isinstance(conflict, dict):
+                    continue
+                locations = "、".join(str(item) for item in conflict.get("locations", []))
+                text = (
+                    f"{locations}：{conflict.get('description', '')}"
+                    f"；建议：{conflict.get('recommendation', '')}"
+                )
+                doc.add_paragraph(text, style="List Bullet")
+
+        confirmations = llm_result.get("items_to_confirm", [])
+        if confirmations:
+            _add_heading("需人工确认事项", level=3)
+            for item in confirmations:
+                if not isinstance(item, dict):
+                    continue
+                text = f"{item.get('item', '')}（原因：{item.get('reason', '')}）"
+                doc.add_paragraph(text, style="List Bullet")
 
     doc.save(output_path)
