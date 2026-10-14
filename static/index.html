@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>合同模版审核系统</title>
+<style>
+/* ─── Reset & 基础 ─── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --primary: #2563eb; --primary-light: #eff6ff; --primary-border: #bfdbfe;
+  --green: #16a34a;   --green-bg: #f0fdf4;      --green-border: #bbf7d0;
+  --red: #dc2626;     --red-bg: #fef2f2;        --red-border: #fecaca;
+  --yellow: #d97706;  --yellow-bg: #fffbeb;     --yellow-border: #fde68a;
+  --gray: #6b7280;    --gray-bg: #f9fafb;       --gray-border: #e5e7eb;
+  --text: #111827;    --radius: 10px;           --shadow: 0 1px 3px rgba(0,0,0,.1);
+}
+body {
+  font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", sans-serif;
+  background: #f1f5f9; color: var(--text); font-size: 14px; min-height: 100vh;
+}
+
+/* ─── 布局 ─── */
+.app { display: flex; flex-direction: column; min-height: 100vh; }
+header {
+  background: #1e3a8a; color: white; padding: 0 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 56px; box-shadow: 0 2px 6px rgba(0,0,0,.2);
+}
+header h1 { font-size: 18px; font-weight: 700; letter-spacing: .3px; }
+header .version { font-size: 12px; opacity: .6; }
+.main { display: grid; grid-template-columns: 380px 1fr; gap: 20px; padding: 20px 24px; flex: 1; max-width: 1400px; margin: 0 auto; width: 100%; }
+
+/* ─── 面板 ─── */
+.panel { background: white; border-radius: var(--radius); border: 1px solid var(--gray-border); box-shadow: var(--shadow); }
+.panel-header { padding: 14px 18px; border-bottom: 1px solid var(--gray-border); font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+.panel-body { padding: 18px; }
+
+/* ─── 表单控件 ─── */
+.form-group { margin-bottom: 16px; }
+label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; color: #374151; }
+.hint { font-size: 12px; color: var(--gray); margin-top: 4px; }
+select, input[type="text"], input[type="password"] {
+  width: 100%; padding: 8px 10px; border: 1px solid var(--gray-border);
+  border-radius: 6px; font-size: 14px; outline: none; transition: border-color .2s;
+  background: white; color: var(--text);
+}
+select:focus, input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
+.file-drop {
+  border: 2px dashed var(--gray-border); border-radius: 8px; padding: 24px 16px;
+  text-align: center; cursor: pointer; transition: all .2s; background: var(--gray-bg);
+}
+.file-drop:hover, .file-drop.drag-over { border-color: var(--primary); background: var(--primary-light); }
+.file-drop .icon { font-size: 32px; margin-bottom: 8px; }
+.file-drop .text { color: var(--gray); font-size: 13px; }
+.file-drop .file-name { font-weight: 600; color: var(--primary); margin-top: 6px; font-size: 13px; }
+input[type="file"] { display: none; }
+
+/* ─── 按钮 ─── */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 18px; border-radius: 6px; font-size: 14px;
+  font-weight: 600; cursor: pointer; border: none; transition: all .2s;
+}
+.btn-primary { background: var(--primary); color: white; width: 100%; justify-content: center; }
+.btn-primary:hover:not(:disabled) { background: #1d4ed8; }
+.btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+.btn-outline { background: white; color: var(--primary); border: 1px solid var(--primary); }
+.btn-outline:hover { background: var(--primary-light); }
+.btn-green { background: var(--green); color: white; }
+.btn-green:hover { background: #15803d; }
+.btn-llm { background: #7c3aed; color: white; width: 100%; justify-content: center; margin-top: 10px; }
+.btn-llm:hover:not(:disabled) { background: #6d28d9; }
+.btn-llm:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ─── 分割线 ─── */
+.divider { border: none; border-top: 1px solid var(--gray-border); margin: 16px 0; }
+
+/* ─── Toggle ─── */
+.toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.toggle { position: relative; width: 44px; height: 24px; cursor: pointer; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle .slider {
+  position: absolute; inset: 0; background: var(--gray-border);
+  border-radius: 9999px; transition: .2s;
+}
+.toggle .slider::before {
+  content: ""; position: absolute; left: 3px; top: 3px;
+  width: 18px; height: 18px; background: white; border-radius: 50%; transition: .2s;
+}
+.toggle input:checked + .slider { background: #7c3aed; }
+.toggle input:checked + .slider::before { transform: translateX(20px); }
+
+/* ─── 加载状态 ─── */
+.loading { display: none; text-align: center; padding: 48px 24px; }
+.spinner {
+  width: 40px; height: 40px; border: 3px solid var(--gray-border);
+  border-top-color: var(--primary); border-radius: 50%;
+  animation: spin .8s linear infinite; margin: 0 auto 16px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading .msg { color: var(--gray); font-size: 15px; }
+
+/* ─── 结果区域 ─── */
+.result-area { display: none; }
+.stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+.stat-card { border-radius: 8px; padding: 14px 12px; text-align: center; border: 1px solid; }
+.stat-card .num { font-size: 26px; font-weight: 700; }
+.stat-card .lbl { font-size: 11px; margin-top: 4px; }
+.stat-card.green { background: var(--green-bg); border-color: var(--green-border); }
+.stat-card.green .num { color: var(--green); }
+.stat-card.red { background: var(--red-bg); border-color: var(--red-border); }
+.stat-card.red .num { color: var(--red); }
+.stat-card.yellow { background: var(--yellow-bg); border-color: var(--yellow-border); }
+.stat-card.yellow .num { color: var(--yellow); }
+.stat-card.blue { background: var(--primary-light); border-color: var(--primary-border); }
+.stat-card.blue .num { color: var(--primary); }
+
+.banner { border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 14px; }
+.banner.alert { background: var(--red-bg); border: 1px solid var(--red-border); color: var(--red); }
+.banner.ok { background: var(--green-bg); border: 1px solid var(--green-border); color: var(--green); }
+.banner.warn { background: var(--yellow-bg); border: 1px solid var(--yellow-border); color: var(--yellow); }
+
+.action-row { display: flex; gap: 10px; margin-bottom: 16px; }
+.action-row .btn { flex: 1; justify-content: center; }
+
+.report-frame { width: 100%; height: 680px; border: 1px solid var(--gray-border); border-radius: 8px; }
+
+/* ─── LLM 设置抽屉 ─── */
+.drawer { display: none; }
+.drawer.open { display: block; }
+.drawer-inner { background: var(--primary-light); border: 1px solid var(--primary-border); border-radius: 8px; padding: 14px 16px; margin-top: 12px; }
+.drawer-inner .form-group { margin-bottom: 10px; }
+
+/* ─── 模版目录提示 ─── */
+.dir-badge { display: inline-flex; align-items: center; gap: 6px; background: var(--gray-bg); border: 1px solid var(--gray-border); border-radius: 6px; padding: 4px 10px; font-size: 12px; color: var(--gray); word-break: break-all; margin-top: 6px; }
+
+/* ─── 空状态 ─── */
+.empty-state { text-align: center; padding: 64px 24px; color: var(--gray); }
+.empty-state .icon { font-size: 48px; margin-bottom: 16px; }
+.empty-state .title { font-size: 16px; font-weight: 600; margin-bottom: 6px; color: #374151; }
+.empty-state .desc { font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>📋 合同模版审核系统</h1>
+    <span class="version">v1.0</span>
+  </header>
+
+  <div class="main">
+    <!-- ── 左侧操作面板 ── -->
+    <div class="left-col">
+      <div class="panel">
+        <div class="panel-header">🔍 上传与分析</div>
+        <div class="panel-body">
+
+          <!-- 选择模版 -->
+          <div class="form-group">
+            <label>选择合同模版</label>
+            <select id="templateSelect">
+              <option value="">— 加载中 —</option>
+            </select>
+            <div id="templatesDirHint" class="hint"></div>
+          </div>
+
+          <!-- 上传回签合同 -->
+          <div class="form-group">
+            <label>上传乙方回签合同</label>
+            <div class="file-drop" id="fileDrop" onclick="document.getElementById('fileInput').click()">
+              <div class="icon">📂</div>
+              <div class="text">点击或拖拽文件到此处</div>
+              <div class="text">支持 .docx / .doc / .pdf</div>
+              <div class="file-name" id="fileNameDisplay" style="display:none"></div>
+            </div>
+            <input type="file" id="fileInput" accept=".docx,.doc,.pdf"/>
+          </div>
+
+          <hr class="divider"/>
+
+          <!-- LLM 设置 -->
+          <div class="form-group">
+            <div class="toggle-row">
+              <span style="font-weight:500;font-size:13px">🤖 启用 LLM 辅助分析</span>
+              <label class="toggle">
+                <input type="checkbox" id="useLlm" onchange="toggleLlmDrawer()"/>
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div class="hint">仅在比对置信度不足时推荐开启</div>
+          </div>
+
+          <div class="drawer" id="llmDrawer">
+            <div class="drawer-inner">
+              <div class="form-group">
+                <label>API Key</label>
+                <input type="password" id="llmApiKey" placeholder="sk-..." autocomplete="off"/>
+              </div>
+              <div class="form-group" style="margin-bottom:0">
+                <label>Base URL <span style="font-weight:400;color:var(--gray)">（私有部署可修改）</span></label>
+                <input type="text" id="llmBaseUrl" placeholder="https://api.openai.com/v1"/>
+              </div>
+            </div>
+          </div>
+
+          <hr class="divider"/>
+
+          <!-- 分析按钮 -->
+          <button class="btn btn-primary" id="analyzeBtn" onclick="startAnalysis()" disabled>
+            <span id="analyzeBtnIcon">🚀</span>
+            <span id="analyzeBtnText">开始审核</span>
+          </button>
+
+        </div>
+      </div>
+
+      <!-- 模版库路径提示 -->
+      <div style="margin-top:12px;padding:12px 14px;background:white;border-radius:var(--radius);border:1px solid var(--gray-border);font-size:12px;color:var(--gray);line-height:1.8">
+        <div style="font-weight:600;color:#374151;margin-bottom:4px">📁 模版库说明</div>
+        将合同模版（.docx/.pdf）存放到以下目录，支持子目录分类：
+        <div id="templatesDirPath" class="dir-badge" style="margin-top:6px">加载中...</div>
+      </div>
+    </div>
+
+    <!-- ── 右侧结果区域 ── -->
+    <div class="right-col">
+      <div class="panel" style="height:100%">
+        <div class="panel-header" id="resultHeader">📊 审核结果</div>
+        <div class="panel-body" id="resultBody" style="height:calc(100% - 49px); overflow:auto;">
+
+          <!-- 空状态 -->
+          <div class="empty-state" id="emptyState">
+            <div class="icon">📝</div>
+            <div class="title">等待审核</div>
+            <div class="desc">请在左侧选择模版并上传乙方回签合同，点击「开始审核」。</div>
+          </div>
+
+          <!-- 加载中 -->
+          <div class="loading" id="loadingState">
+            <div class="spinner"></div>
+            <div class="msg">正在比对文档，请稍候…</div>
+          </div>
+
+          <!-- 结果 -->
+          <div class="result-area" id="resultArea">
+            <div id="resultBanner" class="banner"></div>
+
+            <div class="stat-grid">
+              <div class="stat-card green"><div class="num" id="statFilled">0</div><div class="lbl">正常填写字段</div></div>
+              <div class="stat-card red"><div class="num" id="statTampered">0</div><div class="lbl">疑似修改</div></div>
+              <div class="stat-card yellow"><div class="num" id="statRemoved">0</div><div class="lbl">内容缺失</div></div>
+              <div class="stat-card blue"><div class="num" id="statAdded">0</div><div class="lbl">模版外新增</div></div>
+            </div>
+
+            <div class="action-row">
+              <a id="btnViewHtml" href="#" target="_blank" class="btn btn-outline">🔍 在新窗口查看详细报告</a>
+              <a id="btnDownloadWord" href="#" class="btn btn-green">⬇ 下载 Word 报告</a>
+            </div>
+
+            <!-- LLM 自动触发提示 -->
+            <div id="llmAutoNote" class="banner warn" style="display:none">
+              ⚠️ 文档相似度较低，已自动触发 LLM 辅助分析。
+            </div>
+            <div id="llmErrorNote" class="banner" style="display:none;background:#fef2f2;border-color:#fecaca;color:#dc2626">
+              LLM 分析失败：<span id="llmErrorMsg"></span>
+            </div>
+            <div id="llmSuggestNote" class="banner warn" style="display:none">
+              💡 文档相似度偏低（可能模版选择有误，或乙方改动较多），建议开启 LLM 辅助分析后重新审核。
+            </div>
+
+            <!-- 报告预览 iframe -->
+            <iframe id="reportFrame" class="report-frame" title="审核报告预览"></iframe>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── 状态 ───
+let selectedFile = null;
+let currentJobId = null;
+
+// ─── 初始化 ───
+async function init() {
+  await loadTemplates();
+  setupFileDrop();
+}
+
+// ─── 加载模版列表 ───
+async function loadTemplates() {
+  try {
+    const res = await fetch('/api/templates');
+    const data = await res.json();
+    const sel = document.getElementById('templateSelect');
+    const hint = document.getElementById('templatesDirHint');
+    const dirPath = document.getElementById('templatesDirPath');
+
+    dirPath.textContent = data.templates_dir || '';
+
+    if (!data.templates || data.templates.length === 0) {
+      sel.innerHTML = '<option value="">— 暂无模版，请先添加到模版库目录 —</option>';
+      hint.textContent = '请将 .docx/.pdf 模版放入上方目录';
+      return;
+    }
+
+    // 按分类分组
+    const groups = {};
+    data.templates.forEach(t => {
+      const cat = t.category || '默认';
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(t);
+    });
+
+    sel.innerHTML = '<option value="">— 请选择模版 —</option>';
+    Object.entries(groups).forEach(([cat, items]) => {
+      const og = document.createElement('optgroup');
+      og.label = cat === '.' ? '默认' : cat;
+      items.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t.id;
+        opt.textContent = t.name;
+        og.appendChild(opt);
+      });
+      sel.appendChild(og);
+    });
+    hint.textContent = `共 ${data.templates.length} 个模版`;
+  } catch (e) {
+    document.getElementById('templateSelect').innerHTML = '<option value="">加载失败，请刷新页面</option>';
+  }
+}
+
+// ─── 文件拖拽上传 ───
+function setupFileDrop() {
+  const drop = document.getElementById('fileDrop');
+  const input = document.getElementById('fileInput');
+
+  input.addEventListener('change', () => {
+    if (input.files[0]) setFile(input.files[0]);
+  });
+
+  drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('drag-over'); });
+  drop.addEventListener('dragleave', () => drop.classList.remove('drag-over'));
+  drop.addEventListener('drop', e => {
+    e.preventDefault();
+    drop.classList.remove('drag-over');
+    const f = e.dataTransfer.files[0];
+    if (f) setFile(f);
+  });
+}
+
+function setFile(f) {
+  const ext = f.name.split('.').pop().toLowerCase();
+  if (!['docx', 'doc', 'pdf'].includes(ext)) {
+    alert('仅支持 .docx / .doc / .pdf 格式');
+    return;
+  }
+  selectedFile = f;
+  const display = document.getElementById('fileNameDisplay');
+  display.textContent = `📄 ${f.name}`;
+  display.style.display = 'block';
+  document.querySelector('#fileDrop .text').style.display = 'none';
+  checkCanAnalyze();
+}
+
+function checkCanAnalyze() {
+  const tmpl = document.getElementById('templateSelect').value;
+  document.getElementById('analyzeBtn').disabled = !(tmpl && selectedFile);
+}
+
+document.getElementById('templateSelect').addEventListener('change', checkCanAnalyze);
+
+// ─── LLM 抽屉 ───
+function toggleLlmDrawer() {
+  const checked = document.getElementById('useLlm').checked;
+  document.getElementById('llmDrawer').classList.toggle('open', checked);
+}
+
+// ─── 主分析流程 ───
+async function startAnalysis() {
+  const templateId = document.getElementById('templateSelect').value;
+  if (!templateId || !selectedFile) return;
+
+  // 切换 UI 到加载状态
+  showState('loading');
+  const btn = document.getElementById('analyzeBtn');
+  btn.disabled = true;
+  document.getElementById('analyzeBtnText').textContent = '分析中...';
+
+  const useLlm = document.getElementById('useLlm').checked;
+  const apiKey = document.getElementById('llmApiKey').value;
+  const baseUrl = document.getElementById('llmBaseUrl').value;
+
+  const formData = new FormData();
+  formData.append('template_id', templateId);
+  formData.append('contract_file', selectedFile);
+  formData.append('use_llm', useLlm.toString());
+  if (apiKey) formData.append('llm_api_key', apiKey);
+  if (baseUrl) formData.append('llm_base_url', baseUrl);
+
+  try {
+    const res = await fetch('/api/analyze', { method: 'POST', body: formData });
+    const data = await res.json();
+
+    if (!res.ok) {
+      showError(data.detail || '分析失败，请检查文件格式');
+      return;
+    }
+
+    renderResult(data);
+    showState('result');
+  } catch (e) {
+    showError('网络错误：' + e.message);
+  } finally {
+    btn.disabled = false;
+    document.getElementById('analyzeBtnText').textContent = '开始审核';
+  }
+}
+
+function renderResult(data) {
+  currentJobId = data.job_id;
+
+  // 统计数字
+  document.getElementById('statFilled').textContent = data.filled_count;
+  document.getElementById('statTampered').textContent = data.tampered_count;
+  document.getElementById('statRemoved').textContent = data.removed_count;
+  document.getElementById('statAdded').textContent = data.added_count;
+
+  // 横幅
+  const banner = document.getElementById('resultBanner');
+  const alertCount = data.alert_count;
+  if (alertCount > 0) {
+    banner.className = 'banner alert';
+    banner.innerHTML = `🚨 发现 ${alertCount} 处需关注的差异（修改 ${data.tampered_count} / 缺失 ${data.removed_count} / 模版外新增 ${data.added_count}）`;
+  } else {
+    banner.className = 'banner ok';
+    banner.innerHTML = `✅ 模版内容完整，未发现修改，共 ${data.filled_count} 个填写字段`;
+  }
+
+  // 相似度更新标题
+  document.getElementById('resultHeader').textContent = `📊 审核结果（模版相似度 ${(data.similarity * 100).toFixed(1)}%）`;
+
+  // LLM 提示
+  document.getElementById('llmAutoNote').style.display = data.llm_auto_triggered ? 'flex' : 'none';
+  const llmErr = document.getElementById('llmErrorNote');
+  if (data.llm_error) {
+    llmErr.style.display = 'flex';
+    document.getElementById('llmErrorMsg').textContent = data.llm_error;
+  } else {
+    llmErr.style.display = 'none';
+  }
+  const suggestNote = document.getElementById('llmSuggestNote');
+  suggestNote.style.display = (data.needs_llm && !data.llm_auto_triggered && !document.getElementById('useLlm').checked) ? 'flex' : 'none';
+
+  // 按钮链接
+  document.getElementById('btnViewHtml').href = data.report_html_url;
+  document.getElementById('btnDownloadWord').href = data.report_word_url;
+
+  // iframe 预览
+  document.getElementById('reportFrame').src = data.report_html_url;
+}
+
+function showState(state) {
+  document.getElementById('emptyState').style.display = state === 'empty' ? 'block' : 'none';
+  document.getElementById('loadingState').style.display = state === 'loading' ? 'block' : 'none';
+  document.getElementById('resultArea').style.display = state === 'result' ? 'block' : 'none';
+}
+
+function showError(msg) {
+  showState('empty');
+  const es = document.getElementById('emptyState');
+  es.querySelector('.icon').textContent = '❌';
+  es.querySelector('.title').textContent = '分析失败';
+  es.querySelector('.desc').textContent = msg;
+  es.style.display = 'block';
+}
+
+// 启动
+init();
+</script>
+</body>
+</html>

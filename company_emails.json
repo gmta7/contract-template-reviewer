@@ -1,0 +1,15 @@
+{
+  "_comment": "请替换为你所在组织的真实签约主体和邮箱后缀；域名前面的 @ 可写可不写。",
+  "companies": [
+    {
+      "name": "示例科技有限公司",
+      "aliases": ["示例科技"],
+      "email_domains": ["@example-a.com"]
+    },
+    {
+      "name": "示例网络信息有限公司",
+      "aliases": ["示例网络"],
+      "email_domains": ["@example-b.com"]
+    }
+  ]
+}
